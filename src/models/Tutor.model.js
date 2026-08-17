@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const tutorSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -14,4 +14,4 @@ tutorSchema.pre('save', async function(next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-module.exports = mongoose.model('Tutor', tutorSchema);
+export default mongoose.model('Tutor', tutorSchema);

@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { getActivities, createActivity } = require('../controllers/activity.controller');
-const { protect } = require('../middleware/auth.middleware');
+import { getActivities, createActivity } from '../controllers/activity.controller.js';
+import { protect } from '../middleware/auth.middleware.js';
 
 router.use(protect);
 
@@ -9,4 +9,4 @@ router.route('/')
   .get(getActivities)
   .post(createActivity);
 
-module.exports = router;
+export default router;

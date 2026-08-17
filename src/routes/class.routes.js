@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { getClasses, createClass, updateClass, deleteClass } = require('../controllers/class.controller');
-const { protect } = require('../middleware/auth.middleware');
+import { getClasses, createClass, updateClass, deleteClass } from '../controllers/class.controller.js';
+import { protect } from '../middleware/auth.middleware.js';
 
 router.use(protect);
 
@@ -13,4 +13,4 @@ router.route('/:id')
   .put(updateClass)
   .delete(deleteClass);
 
-module.exports = router;
+export default router;

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const announcementSchema = new mongoose.Schema({
   tutorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tutor', required: true },
@@ -9,4 +9,4 @@ const announcementSchema = new mongoose.Schema({
   audience: { type: String, enum: ['students', 'parents', 'both'], default: 'both' }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Announcement', announcementSchema);
+export default mongoose.model('Announcement', announcementSchema);

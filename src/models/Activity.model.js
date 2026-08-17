@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const activitySchema = new mongoose.Schema({
   tutorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tutor', required: true },
@@ -6,4 +6,4 @@ const activitySchema = new mongoose.Schema({
   type: { type: String, enum: ['payment', 'attendance', 'student', 'test', 'system'], default: 'system' },
 }, { timestamps: true });
 
-module.exports = mongoose.model('Activity', activitySchema);
+export default mongoose.model('Activity', activitySchema);

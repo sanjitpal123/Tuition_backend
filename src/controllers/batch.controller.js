@@ -1,7 +1,7 @@
-const Batch = require('../models/Batch.model');
-const Student = require('../models/Student.model');
+import Batch from '../models/Batch.model.js';
+import Student from '../models/Student.model.js';
 
-exports.getBatches = async (req, res) => {
+export const getBatches = async (req, res) => {
   try {
     const batches = await Batch.find({ tutorId: req.tutor._id });
     
@@ -17,7 +17,7 @@ exports.getBatches = async (req, res) => {
   }
 };
 
-exports.createBatch = async (req, res) => {
+export const createBatch = async (req, res) => {
   try {
     const { name, className, subject, schedule, time, fee } = req.body;
     const batch = await Batch.create({
@@ -35,7 +35,7 @@ exports.createBatch = async (req, res) => {
   }
 };
 
-exports.updateBatch = async (req, res) => {
+export const updateBatch = async (req, res) => {
   try {
     const batch = await Batch.findOneAndUpdate(
       { _id: req.params.id, tutorId: req.tutor._id },
@@ -49,7 +49,7 @@ exports.updateBatch = async (req, res) => {
   }
 };
 
-exports.deleteBatch = async (req, res) => {
+export const deleteBatch = async (req, res) => {
   try {
     const batch = await Batch.findOneAndDelete({ _id: req.params.id, tutorId: req.tutor._id });
     if (!batch) return res.status(404).json({ message: 'Batch not found' });

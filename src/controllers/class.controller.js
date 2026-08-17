@@ -1,6 +1,6 @@
-const Class = require('../models/Class.model');
+import Class from '../models/Class.model.js';
 
-exports.getClasses = async (req, res) => {
+export const getClasses = async (req, res) => {
   try {
     const classes = await Class.find({ tutorId: req.tutor._id }).populate('batchId', 'name class subject fee');
     res.json(classes);
@@ -9,7 +9,7 @@ exports.getClasses = async (req, res) => {
   }
 };
 
-exports.createClass = async (req, res) => {
+export const createClass = async (req, res) => {
   try {
     const { batchId, date, time, subject, status } = req.body;
     const newClass = await Class.create({
@@ -26,7 +26,7 @@ exports.createClass = async (req, res) => {
   }
 };
 
-exports.updateClass = async (req, res) => {
+export const updateClass = async (req, res) => {
   try {
     const updatedClass = await Class.findOneAndUpdate(
       { _id: req.params.id, tutorId: req.tutor._id },
@@ -40,7 +40,7 @@ exports.updateClass = async (req, res) => {
   }
 };
 
-exports.deleteClass = async (req, res) => {
+export const deleteClass = async (req, res) => {
   try {
     const deletedClass = await Class.findOneAndDelete({ _id: req.params.id, tutorId: req.tutor._id });
     if (!deletedClass) return res.status(404).json({ message: 'Class not found' });

@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { getAnnouncements, createAnnouncement } = require('../controllers/announcement.controller');
-const { protect } = require('../middleware/auth.middleware');
+import { getAnnouncements, createAnnouncement } from '../controllers/announcement.controller.js';
+import { protect } from '../middleware/auth.middleware.js';
 
 router.use(protect);
 
@@ -9,4 +9,4 @@ router.route('/')
   .get(getAnnouncements)
   .post(createAnnouncement);
 
-module.exports = router;
+export default router;

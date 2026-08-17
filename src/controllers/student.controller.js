@@ -1,6 +1,6 @@
-const Student = require('../models/Student.model');
+import Student from '../models/Student.model.js';
 
-exports.getStudents = async (req, res) => {
+export const getStudents = async (req, res) => {
   try {
     const students = await Student.find({ tutorId: req.tutor._id }).populate('batchId', 'name');
     res.json(students);
@@ -9,7 +9,7 @@ exports.getStudents = async (req, res) => {
   }
 };
 
-exports.createStudent = async (req, res) => {
+export const createStudent = async (req, res) => {
   try {
     const { name, email, phone, batchId, status, feeStatus } = req.body;
     const student = await Student.create({
@@ -27,7 +27,7 @@ exports.createStudent = async (req, res) => {
   }
 };
 
-exports.updateStudent = async (req, res) => {
+export const updateStudent = async (req, res) => {
   try {
     const student = await Student.findOneAndUpdate(
       { _id: req.params.id, tutorId: req.tutor._id },
@@ -41,7 +41,7 @@ exports.updateStudent = async (req, res) => {
   }
 };
 
-exports.deleteStudent = async (req, res) => {
+export const deleteStudent = async (req, res) => {
   try {
     const student = await Student.findOneAndDelete({ _id: req.params.id, tutorId: req.tutor._id });
     if (!student) return res.status(404).json({ message: 'Student not found' });

@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { getBatches, createBatch, updateBatch, deleteBatch } = require('../controllers/batch.controller');
-const { protect } = require('../middleware/auth.middleware');
+import { getBatches, createBatch, updateBatch, deleteBatch } from '../controllers/batch.controller.js';
+import { protect } from '../middleware/auth.middleware.js';
 
 router.use(protect);
 
@@ -13,4 +13,4 @@ router.route('/:id')
   .put(updateBatch)
   .delete(deleteBatch);
 
-module.exports = router;
+export default router;

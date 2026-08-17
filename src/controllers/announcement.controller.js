@@ -1,6 +1,6 @@
-const Announcement = require('../models/Announcement.model');
+import Announcement from '../models/Announcement.model.js';
 
-exports.getAnnouncements = async (req, res) => {
+export const getAnnouncements = async (req, res) => {
   try {
     const announcements = await Announcement.find({ tutorId: req.tutor._id }).sort({ createdAt: -1 });
     res.json(announcements);
@@ -9,7 +9,7 @@ exports.getAnnouncements = async (req, res) => {
   }
 };
 
-exports.createAnnouncement = async (req, res) => {
+export const createAnnouncement = async (req, res) => {
   try {
     const { title, message, targetType, targetId, audience } = req.body;
     const announcement = await Announcement.create({

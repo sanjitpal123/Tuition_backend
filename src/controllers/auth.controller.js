@@ -1,12 +1,12 @@
-const Tutor = require('../models/Tutor.model');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+import Tutor from '../models/Tutor.model.js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-exports.registerTutor = async (req, res) => {
+export const registerTutor = async (req, res) => {
   try {
     const { name, email, password, tuitionName } = req.body;
     const tutorExists = await Tutor.findOne({ email });
@@ -29,7 +29,7 @@ exports.registerTutor = async (req, res) => {
   }
 };
 
-exports.loginTutor = async (req, res) => {
+export const loginTutor = async (req, res) => {
   try {
     const { email, password } = req.body;
     const tutor = await Tutor.findOne({ email });
@@ -49,6 +49,6 @@ exports.loginTutor = async (req, res) => {
   }
 };
 
-exports.getMe = async (req, res) => {
+export const getMe = async (req, res) => {
   res.json(req.tutor);
 };

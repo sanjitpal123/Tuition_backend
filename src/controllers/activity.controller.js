@@ -1,6 +1,6 @@
-const Activity = require('../models/Activity.model');
+import Activity from '../models/Activity.model.js';
 
-exports.getActivities = async (req, res) => {
+export const getActivities = async (req, res) => {
   try {
     const activities = await Activity.find({ tutorId: req.tutor._id }).sort({ createdAt: -1 }).limit(10);
     res.json(activities);
@@ -9,7 +9,7 @@ exports.getActivities = async (req, res) => {
   }
 };
 
-exports.createActivity = async (req, res) => {
+export const createActivity = async (req, res) => {
   try {
     const { text, type } = req.body;
     const activity = await Activity.create({

@@ -1,9 +1,9 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-
-dotenv.config();
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import connectDB from './config/db.js';
+import dotenv from 'dotenv';
+dotenv.config()
 connectDB();
 
 const app = express();
@@ -13,12 +13,12 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-const authRoutes = require('./routes/auth.routes');
-const studentRoutes = require('./routes/student.routes');
-const batchRoutes = require('./routes/batch.routes');
-const announcementRoutes = require('./routes/announcement.routes');
-const classRoutes = require('./routes/class.routes');
-const activityRoutes = require('./routes/activity.routes');
+import authRoutes from './routes/auth.routes.js';
+import studentRoutes from './routes/student.routes.js';
+import batchRoutes from './routes/batch.routes.js';
+import announcementRoutes from './routes/announcement.routes.js';
+import classRoutes from './routes/class.routes.js';
+import activityRoutes from './routes/activity.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);

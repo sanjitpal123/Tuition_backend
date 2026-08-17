@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const classSchema = new mongoose.Schema({
   tutorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tutor', required: true },
@@ -10,4 +10,4 @@ const classSchema = new mongoose.Schema({
   attendanceMarked: { type: Boolean, default: false }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Class', classSchema);
+export default mongoose.model('Class', classSchema);
