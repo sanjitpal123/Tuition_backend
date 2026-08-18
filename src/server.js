@@ -19,6 +19,8 @@ import batchRoutes from './routes/batch.routes.js';
 import announcementRoutes from './routes/announcement.routes.js';
 import classRoutes from './routes/class.routes.js';
 import activityRoutes from './routes/activity.routes.js';
+import attendanceRoutes from './routes/attendance.routes.js';
+import feeRoutes from './routes/fee.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
@@ -26,6 +28,8 @@ app.use('/api/batches', batchRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/fees', feeRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {

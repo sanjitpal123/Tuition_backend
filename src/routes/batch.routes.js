@@ -9,8 +9,7 @@ router.route('/')
   .get(getBatches)
   .post(createBatch);
 
-router.route('/:id')
-  .put(updateBatch)
-  .delete(deleteBatch);
+router.post('/update/:id', updateBatch);
+router.post('/delete/:id', deleteBatch);
 
 export default router;

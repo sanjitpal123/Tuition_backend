@@ -7,7 +7,7 @@ const classSchema = new mongoose.Schema({
   time: { type: String, required: true },
   subject: { type: String, required: true },
   status: { type: String, enum: ['Upcoming', 'Completed', 'Cancelled'], default: 'Upcoming' },
-  attendanceMarked: { type: Boolean, default: false }
+
 }, { timestamps: true });
 
 export default mongoose.model('Class', classSchema);

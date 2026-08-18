@@ -1,10 +1,9 @@
 import express from 'express';
 const router = express.Router();
-import { registerTutor, loginTutor, getMe } from '../controllers/auth.controller.js';
-import { protect } from '../middleware/auth.middleware.js';
+import { registerTutor, loginTutor, resetPassword } from '../controllers/auth.controller.js';
 
 router.post('/register', registerTutor);
 router.post('/login', loginTutor);
-router.get('/me', protect, getMe);
+router.post('/reset-password', resetPassword);
 
 export default router;

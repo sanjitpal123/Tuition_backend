@@ -9,8 +9,7 @@ router.route('/')
   .get(getClasses)
   .post(createClass);
 
-router.route('/:id')
-  .put(updateClass)
-  .delete(deleteClass);
+router.post('/update/:id', updateClass);
+router.post('/delete/:id', deleteClass);
 
 export default router;

@@ -9,8 +9,7 @@ router.route('/')
   .get(getStudents)
   .post(createStudent);
 
-router.route('/:id')
-  .put(updateStudent)
-  .delete(deleteStudent);
+router.post('/update/:id', updateStudent);
+router.post('/delete/:id', deleteStudent);
 
 export default router;

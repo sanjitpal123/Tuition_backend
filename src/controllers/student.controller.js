@@ -11,33 +11,49 @@ export const getStudents = async (req, res) => {
 
 export const createStudent = async (req, res) => {
   try {
-    const { name, email, phone, batchId, status, feeStatus } = req.body;
+    const { name, email, phone, batchId, status, feeStatus, parent_name, parent_phone, address, fees } = req.body;
+    
+    // Safely handle batchId to avoid Cast to ObjectId errors
+    let safeBatchId = batchId;
+    if (!safeBatchId || safeBatchId === '' || safeBatchId === 'test') {
+      safeBatchId = undefined; // Let mongoose handle it as unset
+    }
+
     const student = await Student.create({
       tutorId: req.tutor._id,
       name,
       email,
       phone,
-      batchId,
+      batchId: safeBatchId,
       status,
-      feeStatus
+      feeStatus,
+      parent_name,
+      parent_phone,
+      address,
+      fees
     });
     res.status(201).json(student);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
 export const updateStudent = async (req, res) => {
   try {
+    const updateData = { ...req.body };
+    if (updateData.batchId === '' || updateData.batchId === 'test') {
+      updateData.batchId = undefined; // Avoid casting issues
+    }
+    
     const student = await Student.findOneAndUpdate(
       { _id: req.params.id, tutorId: req.tutor._id },
-      req.body,
+      { $set: updateData },
       { new: true }
     );
     if (!student) return res.status(404).json({ message: 'Student not found' });
     res.json(student);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
