@@ -1,19 +1,22 @@
-import admin from 'firebase-admin';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 import Notification from '../models/Notification.model.js';
 
 let isFirebaseInitialized = false;
+let messagingApp;
 
 export const initializeFirebase = () => {
   try {
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
+      const app = initializeApp({
+        credential: cert({
           projectId: process.env.FIREBASE_PROJECT_ID,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
           // Replace \n with actual newlines
           privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
         }),
       });
+      messagingApp = getMessaging(app);
       isFirebaseInitialized = true;
       console.log('Firebase Admin SDK initialized successfully.');
     } else {
@@ -37,7 +40,7 @@ export const sendPushNotification = async ({ tokens, title, body, data = {} }) =
   };
 
   try {
-    const response = await admin.messaging().sendEachForMulticast(message);
+    const response = await messagingApp.sendEachForMulticast(message);
     console.log(response.successCount + ' messages were sent successfully');
     if (response.failureCount > 0) {
       response.responses.forEach((resp, idx) => {
