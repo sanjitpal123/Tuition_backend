@@ -1,4 +1,6 @@
 import Student from '../models/Student.model.js';
+import Notification from '../models/Notification.model.js';
+import { sendPushNotification } from '../services/firebase.service.js';
 
 export const getStudents = async (req, res) => {
   try {
@@ -29,12 +31,37 @@ export const createStudent = async (req, res) => {
 
 export const updateStudent = async (req, res) => {
   try {
+    const existingStudent = await Student.findOne({ _id: req.params.id, tutorId: req.tutor._id });
+    if (!existingStudent) return res.status(404).json({ message: 'Student not found' });
+
+    const wasFeePending = existingStudent.feeStatus !== 'Paid';
+    const isFeeNowPaid = req.body.feeStatus === 'Paid';
+
     const student = await Student.findOneAndUpdate(
       { _id: req.params.id, tutorId: req.tutor._id },
       req.body,
       { new: true }
     );
-    if (!student) return res.status(404).json({ message: 'Student not found' });
+
+    if (wasFeePending && isFeeNowPaid) {
+      if (student.fcmTokens && student.fcmTokens.length > 0) {
+        await sendPushNotification({
+          tokens: student.fcmTokens,
+          title: 'Fee Payment Received',
+          body: `Your fee payment has been successfully recorded.`,
+          data: { type: 'fee' }
+        });
+      }
+
+      await Notification.create({
+        recipientId: student._id,
+        recipientModel: 'Student',
+        title: 'Fee Payment Received',
+        body: `Your fee payment has been successfully recorded.`,
+        type: 'fee'
+      });
+    }
+
     res.json(student);
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -5,7 +5,8 @@ const tutorSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  tuitionName: { type: String }
+  tuitionName: { type: String },
+  fcmTokens: [{ type: String }]
 }, { timestamps: true });
 
 tutorSchema.pre('save', async function(next) {

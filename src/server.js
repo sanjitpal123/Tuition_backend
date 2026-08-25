@@ -19,6 +19,10 @@ import batchRoutes from './routes/batch.routes.js';
 import announcementRoutes from './routes/announcement.routes.js';
 import classRoutes from './routes/class.routes.js';
 import activityRoutes from './routes/activity.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import { initializeFirebase } from './services/firebase.service.js';
+
+initializeFirebase();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
@@ -26,6 +30,7 @@ app.use('/api/batches', batchRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {

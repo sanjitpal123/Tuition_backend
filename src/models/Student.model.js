@@ -7,7 +7,8 @@ const studentSchema = new mongoose.Schema({
   phone: { type: String },
   batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch' },
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
-  feeStatus: { type: String, enum: ['Paid', 'Pending', 'Overdue'], default: 'Pending' }
+  feeStatus: { type: String, enum: ['Paid', 'Pending', 'Overdue'], default: 'Pending' },
+  fcmTokens: [{ type: String }]
 }, { timestamps: true });
 
 export default mongoose.model('Student', studentSchema);
