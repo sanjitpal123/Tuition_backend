@@ -42,7 +42,7 @@ app.use('/api/attendance', attendanceRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to Tutionly Backend API' });
+  res.json({ message: 'Welcome to Setupclass Backend API' });
 });
 
 const PORT = process.env.PORT || 5000;
