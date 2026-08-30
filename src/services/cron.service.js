@@ -144,14 +144,14 @@ export const initializeCronJobs = () => {
         const classTimeInMinutes = hours * 60 + minutes;
         const timeDiff = classTimeInMinutes - currentTimeInMinutes;
 
-        // If class starts between 45 to 60 minutes from now
+        // If class starts between 0 to 15 minutes from now
         // Because the cron runs every 15 mins (e.g. at :00, :15, :30, :45)
-        // This ensures the notification hits exactly once in the 1 hour window prior
-        if (timeDiff > 45 && timeDiff <= 60) {
+        // This ensures the notification hits exactly once in the 15 minute window prior
+        if (timeDiff > 0 && timeDiff <= 15) {
           const tutor = cls.tutorId;
           const batchName = cls.batchId ? cls.batchId.name : 'Unknown Batch';
           const title = 'Upcoming Class Reminder';
-          const bodyMessage = `Reminder: Your class for ${batchName} starts in 1 hour (at ${cls.time}).`;
+          const bodyMessage = `Reminder: Your class for ${batchName} starts in 15 minutes (at ${cls.time}).`;
 
           if (tutor.fcmTokens && tutor.fcmTokens.length > 0) {
             await sendPushNotification({
@@ -161,6 +161,15 @@ export const initializeCronJobs = () => {
               data: { type: 'class_reminder', classId: cls._id.toString() }
             });
           }
+
+          // Save to database so it shows up in the frontend Notifications tab
+          await Notification.create({
+            recipientId: tutor._id,
+            recipientModel: 'Tutor',
+            title,
+            body: bodyMessage,
+            type: 'general'
+          });
         }
       }
     } catch (error) {
