@@ -1,5 +1,6 @@
 import Batch from '../models/Batch.model.js';
 import Student from '../models/Student.model.js';
+import Attendance from '../models/Attendance.model.js';
 
 export const getBatches = async (req, res) => {
   try {
@@ -8,7 +9,16 @@ export const getBatches = async (req, res) => {
     // We can also attach student count to each batch if needed
     const batchesWithCount = await Promise.all(batches.map(async (batch) => {
       const studentsCount = await Student.countDocuments({ batchId: batch._id });
-      return { ...batch.toObject(), studentsCount };
+      
+      // Calculate real-time attendance
+      const records = await Attendance.find({ batchId: batch._id });
+      let attendanceAvg = 0;
+      if (records.length > 0) {
+        const presentCount = records.filter(r => r.tution_present === 'Present').length;
+        attendanceAvg = Math.round((presentCount / records.length) * 100);
+      }
+      
+      return { ...batch.toObject(), studentsCount, attendanceAvg };
     }));
 
     res.json(batchesWithCount);

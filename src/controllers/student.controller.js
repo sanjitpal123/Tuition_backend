@@ -1,6 +1,7 @@
 import Student from '../models/Student.model.js';
 import Notification from '../models/Notification.model.js';
 import { sendPushNotification } from '../services/firebase.service.js';
+import bcrypt from 'bcryptjs';
 
 export const getStudents = async (req, res) => {
   try {
@@ -13,12 +14,23 @@ export const getStudents = async (req, res) => {
 
 export const createStudent = async (req, res) => {
   try {
-    const { name, email, phone, batchId, status, feeStatus } = req.body;
+    const { name, email, phone, parentName, parentPhone, admissionDate, batchId, status, feeStatus, password } = req.body;
+    
+    let hashedPassword = undefined;
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      hashedPassword = await bcrypt.hash(password, salt);
+    }
+
     const student = await Student.create({
       tutorId: req.tutor._id,
       name,
       email,
       phone,
+      parentName,
+      parentPhone,
+      admissionDate,
+      password: hashedPassword,
       batchId,
       status,
       feeStatus
