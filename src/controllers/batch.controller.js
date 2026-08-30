@@ -1,6 +1,7 @@
 import Batch from '../models/Batch.model.js';
 import Student from '../models/Student.model.js';
 import Attendance from '../models/Attendance.model.js';
+import Activity from '../models/Activity.model.js';
 
 export const getBatches = async (req, res) => {
   try {
@@ -39,6 +40,13 @@ export const createBatch = async (req, res) => {
       time,
       fee
     });
+
+    await Activity.create({
+      tutorId: req.tutor._id,
+      text: `Created new batch: ${batch.name}`,
+      type: 'system'
+    });
+
     res.status(201).json(batch);
   } catch (error) {
     res.status(500).json({ message: error.message });

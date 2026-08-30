@@ -1,6 +1,7 @@
 import Fee from '../models/Fee.model.js';
 import Student from '../models/Student.model.js';
 import Notification from '../models/Notification.model.js';
+import Activity from '../models/Activity.model.js';
 import { sendPushNotification } from '../services/firebase.service.js';
 
 export const getFees = async (req, res) => {
@@ -51,6 +52,12 @@ export const recordFeePayment = async (req, res) => {
         body: `Your fee payment for ${month} has been successfully recorded.`,
         type: 'fee'
       });
+      
+      await Activity.create({
+        tutorId: req.tutor._id,
+        text: `Recorded ₹${amount} payment from ${student.name}`,
+        type: 'payment'
+      });
     }
 
     res.status(201).json(fee);
@@ -81,6 +88,15 @@ export const deleteFeePayment = async (req, res) => {
         { _id: studentId, tutorId: req.tutor._id },
         { feeStatus: 'Pending' }
       );
+    }
+    
+    const studentInfo = await Student.findById(studentId);
+    if (studentInfo) {
+      await Activity.create({
+        tutorId: req.tutor._id,
+        text: `Deleted payment record for ${studentInfo.name}`,
+        type: 'payment'
+      });
     }
 
     res.status(200).json({ message: 'Fee payment removed' });

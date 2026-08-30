@@ -1,4 +1,6 @@
 import Attendance from '../models/Attendance.model.js';
+import Batch from '../models/Batch.model.js';
+import Activity from '../models/Activity.model.js';
 import mongoose from 'mongoose';
 
 export const saveAttendance = async (req, res) => {
@@ -31,6 +33,15 @@ export const saveAttendance = async (req, res) => {
     }));
 
     await Attendance.bulkWrite(ops);
+
+    const batch = await Batch.findById(batchId);
+    if (batch) {
+      await Activity.create({
+        tutorId: req.tutor._id,
+        text: `Marked attendance for ${batch.name}`,
+        type: 'attendance'
+      });
+    }
 
     res.status(200).json({ message: 'Attendance saved successfully' });
   } catch (error) {
