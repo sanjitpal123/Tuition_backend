@@ -31,7 +31,7 @@ export const getStudents = async (req, res) => {
 
 export const createStudent = async (req, res) => {
   try {
-    const { name, email, phone, parentName, parentPhone, admissionDate, batchId, status, feeStatus, password } = req.body;
+    const { name, email, phone, parentName, parentPhone, admissionDate, batchId, status, feeStatus, password, fees } = req.body;
 
     const student = await Student.create({
       tutorId: req.tutor._id,
@@ -44,7 +44,8 @@ export const createStudent = async (req, res) => {
       password, // Save plain text password as requested
       batchId,
       status,
-      feeStatus
+      feeStatus,
+      fees
     });
 
     await Activity.create({

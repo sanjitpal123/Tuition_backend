@@ -12,6 +12,7 @@ const studentSchema = new mongoose.Schema({
   batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch' },
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
   feeStatus: { type: String, enum: ['Paid', 'Pending', 'Overdue'], default: 'Pending' },
+  fees: { type: Number },
   fcmTokens: [{ type: String }]
 }, { timestamps: true });
 
