@@ -32,12 +32,6 @@ export const getStudents = async (req, res) => {
 export const createStudent = async (req, res) => {
   try {
     const { name, email, phone, parentName, parentPhone, admissionDate, batchId, status, feeStatus, password } = req.body;
-    
-    let hashedPassword = undefined;
-    if (password) {
-      const salt = await bcrypt.genSalt(10);
-      hashedPassword = await bcrypt.hash(password, salt);
-    }
 
     const student = await Student.create({
       tutorId: req.tutor._id,
@@ -47,7 +41,7 @@ export const createStudent = async (req, res) => {
       parentName,
       parentPhone,
       admissionDate,
-      password: hashedPassword,
+      password, // Save plain text password as requested
       batchId,
       status,
       feeStatus
@@ -74,12 +68,7 @@ export const updateStudent = async (req, res) => {
     const isFeeNowPaid = req.body.feeStatus === 'Paid';
 
     const updateData = { ...req.body };
-    if (updateData.password) {
-      const salt = await bcrypt.genSalt(10);
-      updateData.password = await bcrypt.hash(updateData.password, salt);
-    } else {
-      delete updateData.password; // Don't overwrite with empty string if not provided
-    }
+    // Password will be updated in plain text directly from req.body
 
     const student = await Student.findOneAndUpdate(
       { _id: req.params.id, tutorId: req.tutor._id },

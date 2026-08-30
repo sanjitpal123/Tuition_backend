@@ -16,7 +16,7 @@ export const loginStudent = async (req, res) => {
       $or: [{ email: email }, { phone: email }] 
     });
     
-    if (student && student.password && (await bcrypt.compare(password, student.password))) {
+    if (student && student.password && student.password === password) {
       res.json({
         _id: student.id,
         name: student.name,
