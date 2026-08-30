@@ -12,7 +12,7 @@ export const getBatches = async (req, res) => {
       
       // Calculate real-time attendance
       const records = await Attendance.find({ batchId: batch._id });
-      let attendanceAvg = 0;
+      let attendanceAvg = 100; // Default to 100% if no attendance taken yet
       if (records.length > 0) {
         const presentCount = records.filter(r => r.tution_present === 'Present').length;
         attendanceAvg = Math.round((presentCount / records.length) * 100);

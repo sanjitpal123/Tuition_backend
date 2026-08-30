@@ -58,3 +58,33 @@ export const recordFeePayment = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const deleteFeePayment = async (req, res) => {
+  try {
+    const { studentId, month } = req.params;
+    
+    // Delete the specific fee record
+    const fee = await Fee.findOneAndDelete({
+      tutorId: req.tutor._id,
+      studentId: studentId,
+      month: month
+    });
+
+    if (!fee) {
+      return res.status(404).json({ message: 'Fee record not found for this month' });
+    }
+
+    // If deleting for the current month, also reset the student's status
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    if (month === currentMonth) {
+      await Student.findOneAndUpdate(
+        { _id: studentId, tutorId: req.tutor._id },
+        { feeStatus: 'Pending' }
+      );
+    }
+
+    res.status(200).json({ message: 'Fee payment removed' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
