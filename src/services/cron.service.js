@@ -11,7 +11,7 @@ export const initializeCronJobs = () => {
     try {
       const students = await Student.find({ status: 'Active', feeStatus: 'Pending' })
         .populate('tutorId', 'tuitionName name');
-      
+
       if (students.length === 0) return;
 
       for (const student of students) {
@@ -82,14 +82,14 @@ export const initializeCronJobs = () => {
       for (const tutorData of Object.values(tutorClasses)) {
         const { tutor, classes } = tutorData;
         const totalClasses = classes.length;
-        
+
         // Find the earliest class time
         let earliestTimeStr = classes[0].time;
         // Basic sort if needed, assuming time string is HH:MM or similar. We just use the first for simplicity if not sorted.
         classes.sort((a, b) => a.time.localeCompare(b.time));
-        
+
         const firstClass = classes[0];
-        
+
         const title = 'Your Schedule Today';
         const bodyMessage = `Good morning! You have ${totalClasses} class${totalClasses > 1 ? 'es' : ''} scheduled for today. Your first class starts at ${firstClass.time}.`;
 
@@ -128,7 +128,7 @@ export const initializeCronJobs = () => {
 
       for (const cls of classes) {
         if (!cls.time || !cls.tutorId) continue;
-        
+
         // Parse time (e.g., '14:30' or '02:30 PM')
         let hours = 0;
         let minutes = 0;
