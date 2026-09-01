@@ -96,6 +96,10 @@ export const getStudentDashboard = async (req, res) => {
     const attendanceRecords = await Attendance.find({ studentId: student._id });
     const totalAttended = attendanceRecords.filter(record => record.status === 'Present').length;
     
+    // Fetch Fee Records
+    const Fee = (await import('../models/Fee.model.js')).default;
+    const feeRecords = await Fee.find({ studentId: student._id }).sort({ paymentDate: -1, month: -1 });
+
     res.json({
       student: {
         _id: student._id,
@@ -108,6 +112,9 @@ export const getStudentDashboard = async (req, res) => {
       tuitions,
       announcements,
       homeworks,
+      fees: {
+        history: feeRecords
+      },
       attendance: {
         totalAttended,
         totalClasses: attendanceRecords.length,
