@@ -20,8 +20,44 @@ export const createClass = async (req, res) => {
       subject,
       status
     });
-    res.status(201).json(newClass);
+    const populated = await Class.findById(newClass._id).populate('batchId', 'name class subject fee');
+    res.status(201).json(populated || newClass);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createBulkClasses = async (req, res) => {
+  try {
+    const { classes } = req.body;
+    if (!classes || !Array.isArray(classes) || classes.length === 0) {
+      return res.status(400).json({ message: 'No classes provided for scheduling.' });
+    }
+
+    const classesToInsert = classes.map(c => ({
+      ...c,
+      tutorId: req.tutor._id,
+      status: c.status || 'Upcoming'
+    }));
+
+    const inserted = await Class.insertMany(classesToInsert, { ordered: false });
+    const populated = await Class.find({ _id: { $in: inserted.map(i => i._id) } })
+      .populate('batchId', 'name class subject fee');
+
+    res.status(201).json({
+      message: `Successfully scheduled ${inserted.length} classes.`,
+      classes: populated
+    });
+  } catch (error) {
+    // If partial insert succeeded with duplicate key error, we can still fetch inserted ones
+    if (error.insertedDocs && error.insertedDocs.length > 0) {
+      const populated = await Class.find({ _id: { $in: error.insertedDocs.map(i => i._id) } })
+        .populate('batchId', 'name class subject fee');
+      return res.status(201).json({
+        message: `Successfully scheduled ${error.insertedDocs.length} classes.`,
+        classes: populated
+      });
+    }
     res.status(500).json({ message: error.message });
   }
 };
