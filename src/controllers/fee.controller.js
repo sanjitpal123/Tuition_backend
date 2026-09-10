@@ -117,6 +117,28 @@ export const deleteFeePayment = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const deleteFeePaymentById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const fee = await Fee.findOneAndDelete({ _id: id, tutorId: req.tutor._id });
+    if (!fee) {
+      return res.status(404).json({ message: 'Fee record not found' });
+    }
+
+    const allFeesThisMonth = await Fee.find({ studentId: fee.studentId, month: fee.month, tutorId: req.tutor._id });
+    const totalPaidThisMonth = allFeesThisMonth.reduce((sum, f) => sum + f.amount, 0);
+    const studentInfo = await Student.findOne({ _id: fee.studentId, tutorId: req.tutor._id });
+    if (studentInfo) {
+      studentInfo.feeStatus = totalPaidThisMonth >= (studentInfo.fees || 0) ? 'Paid' : 'Pending';
+      await studentInfo.save();
+    }
+    res.status(200).json({ message: 'Fee payment removed' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const updateFeePayment = async (req, res) => {
   try {
     const { studentId, month } = req.params;
