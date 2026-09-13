@@ -1,5 +1,5 @@
 import express from 'express';
-import { getFees, recordFeePayment, deleteFeePayment, deleteFeePaymentById, updateFeePayment } from '../controllers/fee.controller.js';
+import { getFees, recordFeePayment, deleteFeePayment, updateFeePayment, deleteFeePaymentById } from '../controllers/fee.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -8,8 +8,8 @@ router.use(protect); // Ensure all fee routes are protected by Tutor authenticat
 
 router.get('/', getFees);
 router.post('/', recordFeePayment);
-router.delete('/item/:id', deleteFeePaymentById);
 router.put('/:studentId/:month', updateFeePayment);
+router.delete('/item/:feeId', deleteFeePaymentById);
 router.delete('/:studentId/:month', deleteFeePayment);
 
 export default router;
