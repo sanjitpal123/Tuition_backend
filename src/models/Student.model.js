@@ -4,7 +4,7 @@ const studentSchema = new mongoose.Schema({
   tutorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tutor', required: true },
   name: { type: String, required: true },
   email: { type: String },
-  password: { type: String }, // Hashed password for student login
+  password: { type: String },
   phone: { type: String },
   parentName: { type: String },
   parentPhone: { type: String },
@@ -12,9 +12,23 @@ const studentSchema = new mongoose.Schema({
   admissionDate: { type: Date },
   batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch' },
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
-  feeStatus: { type: String, enum: ['Paid', 'Pending', 'Overdue'], default: 'Pending' },
   fees: { type: Number },
-  fcmTokens: [{ type: String }]
+  fcmTokens: [{ type: String }],
+
+  // Pre-computed fee status (updated by recalculateFeeStatus utility)
+  feeStatus: {
+    status: { type: String, enum: ['Paid', 'Pending', 'Overdue', 'Extra', 'New'], default: 'Pending' },
+    nextDueDate: { type: Date },
+    currentCycleStart: { type: Date },
+    currentCycleEnd: { type: Date },
+    totalPaid: { type: Number, default: 0 },
+    totalExpected: { type: Number, default: 0 },
+    balance: { type: Number, default: 0 },
+    pendingAmount: { type: Number, default: 0 },
+    paidCycles: { type: Number, default: 0 },
+    lastPaidDate: { type: Date, default: null },
+    lastUpdated: { type: Date, default: Date.now }
+  }
 }, { timestamps: true });
 
 export default mongoose.model('Student', studentSchema);

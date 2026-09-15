@@ -3,7 +3,7 @@ import Student from '../models/Student.model.js';
 import Class from '../models/Class.model.js';
 import Notification from '../models/Notification.model.js';
 import { sendPushNotification } from './firebase.service.js';
-
+import recalculateFeeStatus from '../utils/recalculateFeeStatus.js';
 export const initializeCronJobs = () => {
   // Schedule a daily job at 10:00 AM (Fee Reminders)
   cron.schedule('0 10 * * *', async () => {
@@ -175,6 +175,15 @@ export const initializeCronJobs = () => {
     } catch (error) {
       console.error('Error running upcoming class reminder job:', error);
     }
+  });
+
+  cron.schedule('30 18 * * *', async () => {
+    console.log('🔄 Daily fee recalc started');
+    const students = await Student.find({ fees: { $gt: 0 } });
+    for (const s of students) {
+      await recalculateFeeStatus(s._id);
+    }
+    console.log(`✅ Updated ${students.length} students`);
   });
 
   console.log('Cron jobs initialized successfully.');

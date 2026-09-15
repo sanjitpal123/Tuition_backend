@@ -8,10 +8,10 @@ import bcrypt from 'bcryptjs';
 export const getStudents = async (req, res) => {
   try {
     const students = await Student.find({ tutorId: req.tutor._id }).populate('batchId', 'name').lean();
-    
+
     // Fetch all attendance records for this tutor
     const attendanceRecords = await Attendance.find({ tutorId: req.tutor._id }).lean();
-    
+
     // Calculate attendance per student
     const studentWithAttendance = students.map(student => {
       const studentRecords = attendanceRecords.filter(r => r.studentId && r.studentId.toString() === student._id.toString());
@@ -72,7 +72,7 @@ export const updateStudent = async (req, res) => {
     const existingStudent = await Student.findOne({ _id: req.params.id, tutorId: req.tutor._id });
     if (!existingStudent) return res.status(404).json({ message: 'Student not found' });
 
-    const wasFeePending = existingStudent.feeStatus !== 'Paid';
+    const wasFeePending = existingstudent.feeStatus.status !== 'Paid';
     const isFeeNowPaid = req.body.feeStatus === 'Paid';
 
     const updateData = { ...req.body };
@@ -113,7 +113,7 @@ export const deleteStudent = async (req, res) => {
   try {
     const student = await Student.findOneAndDelete({ _id: req.params.id, tutorId: req.tutor._id });
     if (!student) return res.status(404).json({ message: 'Student not found' });
-    
+
     await Activity.create({
       tutorId: req.tutor._id,
       text: `Removed student: ${student.name}`,
