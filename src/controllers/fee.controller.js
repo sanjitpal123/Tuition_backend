@@ -216,3 +216,22 @@ export const deleteFeePaymentById = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// controllers/fee.controller.js
+
+export const getOverdueStudents = async (req, res) => {
+  try {
+    const minMonths = 1;
+    // Instant MongoDB query using indexed field
+    const overdueStudents = await Student.find({
+      tutorId: req.tutor._id,
+      'feeStatus.overdueMonths': { $gte: minMonths }
+    })
+      .populate('batchId', 'name')
+      .sort({ 'feeStatus.overdueMonths': -1 }); // Worst defaulters first!
+
+    res.json(overdueStudents);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

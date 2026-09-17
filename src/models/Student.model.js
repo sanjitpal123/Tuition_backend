@@ -27,7 +27,8 @@ const studentSchema = new mongoose.Schema({
     pendingAmount: { type: Number, default: 0 },
     paidCycles: { type: Number, default: 0 },
     lastPaidDate: { type: Date, default: null },
-    lastUpdated: { type: Date, default: Date.now }
+    lastUpdated: { type: Date, default: Date.now },
+    overdueMonths: { type: Number, default: 0, index: true },
   }
 }, { timestamps: true });
 
