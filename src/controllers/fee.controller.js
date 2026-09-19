@@ -221,6 +221,11 @@ export const deleteFeePaymentById = async (req, res) => {
 
 export const getOverdueStudents = async (req, res) => {
   try {
+    const students = await Student.find({ tutorId: req.tutor._id, fees: { $gt: 0 } });
+    for (const student of students) {
+      await recalculateFeeStatus(student._id);
+    }
+
     const minMonths = 1;
     // Instant MongoDB query using indexed field
     const overdueStudents = await Student.find({

@@ -38,10 +38,10 @@ async function recalculateFeeStatus(studentId) {
     const balance = totalPaid - totalExpected;
     const paidCycles = Math.floor(totalPaid / monthlyFee);
 
-    const overduemonth = balance < 0 ? Math.ceil(Math.abs(balance) / monthlyFee) : 0;
+    const overdueMonths = balance < 0 ? Math.ceil(Math.abs(balance) / monthlyFee) : 0;
     // Status
-    let status = 'paid', pendingAmount = 0;
-    if (balance < 0) { status = overduemonth >= 2 ? 'Overdue' : 'Pending'; pendingAmount = Math.abs(balance); }
+    let status = 'Paid', pendingAmount = 0;
+    if (balance < 0) { status = overdueMonths >= 1 ? 'Overdue' : 'Pending'; pendingAmount = Math.abs(balance); }
     else if (balance > 0) { status = 'Extra'; }
 
 
@@ -70,7 +70,7 @@ async function recalculateFeeStatus(studentId) {
         balance,
         pendingAmount: Math.abs(Math.min(0, balance)),
         paidCycles,
-        overduemonth, // 👈 NEW: e.g. 3 (means 3 months overdue!)
+        overdueMonths,
         lastPaidDate: lastPayment?.createdAt || null,
         lastUpdated: new Date()
     }
