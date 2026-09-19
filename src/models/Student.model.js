@@ -17,7 +17,7 @@ const studentSchema = new mongoose.Schema({
 
   // Pre-computed fee status (updated by recalculateFeeStatus utility)
   feeStatus: {
-    status: { type: String, enum: ['Paid', 'Pending', 'Overdue', 'Extra', 'New'], default: 'Pending' },
+    status: { type: String, enum: ['Paid', 'Pending', 'Overdue', 'Extra', 'New', 'paid', 'pending', 'new'], default: 'Pending' },
     nextDueDate: { type: Date },
     currentCycleStart: { type: Date },
     currentCycleEnd: { type: Date },
@@ -31,5 +31,15 @@ const studentSchema = new mongoose.Schema({
     overdueMonths: { type: Number, default: 0, index: true },
   }
 }, { timestamps: true });
+
+// Intercept raw MongoDB document before Mongoose hydration to fix legacy string feeStatus values in DB
+studentSchema.pre('init', function(doc) {
+  if (doc && typeof doc.feeStatus === 'string') {
+    doc.feeStatus = {
+      status: doc.feeStatus,
+      overdueMonths: 0
+    };
+  }
+});
 
 export default mongoose.model('Student', studentSchema);

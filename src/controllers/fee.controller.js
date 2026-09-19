@@ -172,7 +172,7 @@ export const deleteFeePaymentById = async (req, res) => {
 
 export const getOverdueStudents = async (req, res) => {
   try {
-    const students = await Student.find({ tutorId: req.tutor._id, fees: { $gt: 0 } });
+    const students = await Student.find({ tutorId: req.tutor._id, fees: { $gt: 0 } }).select('_id');
     for (const student of students) {
       try {
         await recalculateFeeStatus(student._id);
