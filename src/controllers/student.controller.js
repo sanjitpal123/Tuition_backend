@@ -3,8 +3,8 @@ import Attendance from '../models/Attendance.model.js';
 import Notification from '../models/Notification.model.js';
 import Activity from '../models/Activity.model.js';
 import { sendPushNotification } from '../services/firebase.service.js';
-import bcrypt from 'bcryptjs';
 import recalculateFeeStatus from '../utils/recalculateFeeStatus.js';
+
 export const getStudents = async (req, res) => {
   try {
     const students = await Student.find({ tutorId: req.tutor._id }).populate('batchId', 'name').lean();
@@ -31,11 +31,10 @@ export const getStudents = async (req, res) => {
 
 export const createStudent = async (req, res) => {
   try {
-    let { name, email, phone, parentName, parentPhone, dob, admissionDate, batchId, status, feeStatus, password, fees } = req.body;
+    let { name, email, phone, parentName, parentPhone, dob, admissionDate, batchId, status, password, fees } = req.body;
 
     // Use DOB as default password if no password is provided
     if (!password && dob) {
-      // dob might be a Date object or "YYYY-MM-DD" string
       password = typeof dob === 'string' ? dob : new Date(dob).toISOString().split('T')[0];
     }
 
@@ -48,12 +47,13 @@ export const createStudent = async (req, res) => {
       parentPhone,
       dob,
       admissionDate,
-      password, // Save plain text password as requested
+      password,
       batchId,
       status,
-      feeStatus,
       fees
     });
+
+    await recalculateFeeStatus(student._id);
 
     await Activity.create({
       tutorId: req.tutor._id,
@@ -72,11 +72,13 @@ export const updateStudent = async (req, res) => {
     const existingStudent = await Student.findOne({ _id: req.params.id, tutorId: req.tutor._id });
     if (!existingStudent) return res.status(404).json({ message: 'Student not found' });
 
-    const wasFeePending = existingstudent.feeStatus.status !== 'Paid';
+    const currentStatus = typeof existingStudent.feeStatus === 'object' ? existingStudent.feeStatus?.status : existingStudent.feeStatus;
+    const wasFeePending = currentStatus !== 'Paid';
     const isFeeNowPaid = req.body.feeStatus === 'Paid';
 
     const updateData = { ...req.body };
-    // Password will be updated in plain text directly from req.body
+    // Prevent string feeStatus from req.body from corrupting embedded feeStatus object in MongoDB
+    delete updateData.feeStatus;
 
     const student = await Student.findOneAndUpdate(
       { _id: req.params.id, tutorId: req.tutor._id },
@@ -84,8 +86,12 @@ export const updateStudent = async (req, res) => {
       { new: true }
     );
 
+    if (student) {
+      await recalculateFeeStatus(student._id);
+    }
+
     if (wasFeePending && isFeeNowPaid) {
-      if (student.fcmTokens && student.fcmTokens.length > 0) {
+      if (student?.fcmTokens && student.fcmTokens.length > 0) {
         await sendPushNotification({
           tokens: student.fcmTokens,
           title: 'Fee Payment Received',

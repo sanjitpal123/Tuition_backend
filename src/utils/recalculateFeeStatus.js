@@ -6,21 +6,16 @@ async function recalculateFeeStatus(studentId) {
     const student = await Student.findById(studentId);
     if (!student) return null;
 
-    // Reset feeStatus if it was previously saved as a primitive string
-    if (typeof student.feeStatus !== 'object' || student.feeStatus === null) {
-      student.feeStatus = {};
-    }
-
     const monthlyFee = Number(student.fees || 0);
     if (monthlyFee === 0) {
-      student.set('feeStatus', {
+      const defaultStatus = {
         status: 'new',
         monthlyFee: 0,
         overdueMonths: 0,
         lastUpdated: new Date()
-      });
-      await student.save();
-      return student.feeStatus;
+      };
+      await Student.updateOne({ _id: studentId }, { $set: { feeStatus: defaultStatus } });
+      return defaultStatus;
     }
 
     const rawDate = student.admissionDate || student.createdAt;
@@ -73,8 +68,7 @@ async function recalculateFeeStatus(studentId) {
       new Date(b.createdAt) - new Date(a.createdAt)
     )[0];
 
-    // Use student.set to cleanly replace object structure safely
-    student.set('feeStatus', {
+    const updatedFeeStatus = {
       status,
       monthlyFee,
       nextDueDate: !isNaN(new Date(nextDueDate).getTime()) ? new Date(nextDueDate) : new Date(),
@@ -88,10 +82,12 @@ async function recalculateFeeStatus(studentId) {
       overdueMonths,
       lastPaidDate: lastPayment?.createdAt || null,
       lastUpdated: new Date()
-    });
+    };
 
-    await student.save();
-    return student.feeStatus;
+    // Use direct MongoDB updateOne to cleanly replace feeStatus in DB without triggering in-memory Mongoose string setter errors
+    await Student.updateOne({ _id: studentId }, { $set: { feeStatus: updatedFeeStatus } });
+
+    return updatedFeeStatus;
   } catch (err) {
     console.error(`Error recalculating fee status for student ${studentId}:`, err);
     return null;
