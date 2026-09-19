@@ -35,9 +35,7 @@ export const recordFeePayment = async (req, res) => {
     const student = await Student.findOne({ _id: studentId, tutorId: req.tutor._id });
 
     if (student) {
-      // Set to Paid if total paid is equal or greater than monthly fee, else Pending
-      student.feeStatus.status = totalPaidThisMonth >= (student.fees || 0) ? 'Paid' : 'Pending';
-      await student.save();
+      await recalculateFeeStatus(student._id);
 
       if (student.fcmTokens && student.fcmTokens.length > 0) {
         await sendPushNotification({
@@ -61,8 +59,6 @@ export const recordFeePayment = async (req, res) => {
         text: `Recorded amount:${amount} payment from ${student.name}`,
         type: 'payment'
       });
-      await recalculateFeeStatus(student._id)
-
     }
 
     res.status(201).json(fee);
@@ -86,35 +82,15 @@ export const deleteFeePayment = async (req, res) => {
       return res.status(404).json({ message: 'Fee record not found for this month' });
     }
 
-    // If deleting for the current month, also reset the student's status
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    if (month === currentMonth) {
-      const allFeesThisMonth = await Fee.find({ studentId, month, tutorId: req.tutor._id });
-      const totalPaidThisMonth = allFeesThisMonth.reduce((sum, f) => sum + f.amount, 0);
-
-      const studentInfo = await Student.findOne({ _id: studentId, tutorId: req.tutor._id });
-      if (studentInfo) {
-        studentInfo.feeStatus = totalPaidThisMonth >= (studentInfo.fees || 0) ? 'Paid' : 'Pending';
-        await studentInfo.save();
-
-        await Activity.create({
-          tutorId: req.tutor._id,
-          text: `Deleted payment record for ${studentInfo.name}`,
-          type: 'payment'
-        });
-      }
-    } else {
-      const studentInfo = await Student.findById(studentId);
-      if (studentInfo) {
-        await Activity.create({
-          tutorId: req.tutor._id,
-          text: `Deleted payment record for ${studentInfo.name}`,
-          type: 'payment'
-        });
-      }
+    const studentInfo = await Student.findOne({ _id: studentId, tutorId: req.tutor._id });
+    if (studentInfo) {
+      await recalculateFeeStatus(studentId);
+      await Activity.create({
+        tutorId: req.tutor._id,
+        text: `Deleted payment record for ${studentInfo.name}`,
+        type: 'payment'
+      });
     }
-    await recalculateFeeStatus(studentId)
-
 
     res.status(200).json({ message: 'Fee payment removed' });
   } catch (error) {
@@ -149,19 +125,13 @@ export const updateFeePayment = async (req, res) => {
     }
 
     if (studentInfo) {
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      if (month === currentMonth) {
-        studentInfo.feeStatus = amount >= (studentInfo.fees || 0) ? 'Paid' : 'Pending';
-        await studentInfo.save();
-      }
-
+      await recalculateFeeStatus(studentId);
       await Activity.create({
         tutorId: req.tutor._id,
         text: `Updated payment record for ${studentInfo.name} to ₹${amount}`,
         type: 'payment'
       });
     }
-    await recalculateFeeStatus(studentId)
     res.status(200).json(newFee || { message: 'Fees updated to 0' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -182,35 +152,16 @@ export const deleteFeePaymentById = async (req, res) => {
       return res.status(404).json({ message: 'Fee record not found' });
     }
 
-    const { studentId, month } = fee;
-    const currentMonth = new Date().toISOString().slice(0, 7);
-
-    if (month === currentMonth) {
-      const allFeesThisMonth = await Fee.find({ studentId, month, tutorId: req.tutor._id });
-      const totalPaidThisMonth = allFeesThisMonth.reduce((sum, f) => sum + f.amount, 0);
-
-      const studentInfo = await Student.findOne({ _id: studentId, tutorId: req.tutor._id });
-      if (studentInfo) {
-        studentInfo.feeStatus = totalPaidThisMonth >= (studentInfo.fees || 0) ? 'Paid' : 'Pending';
-        await studentInfo.save();
-
-        await Activity.create({
-          tutorId: req.tutor._id,
-          text: `Deleted payment record for ${studentInfo.name}`,
-          type: 'payment'
-        });
-      }
-    } else {
-      const studentInfo = await Student.findById(studentId);
-      if (studentInfo) {
-        await Activity.create({
-          tutorId: req.tutor._id,
-          text: `Deleted payment record for ${studentInfo.name}`,
-          type: 'payment'
-        });
-      }
+    const { studentId } = fee;
+    const studentInfo = await Student.findOne({ _id: studentId, tutorId: req.tutor._id });
+    if (studentInfo) {
+      await recalculateFeeStatus(studentId);
+      await Activity.create({
+        tutorId: req.tutor._id,
+        text: `Deleted payment record for ${studentInfo.name}`,
+        type: 'payment'
+      });
     }
-    await recalculateFeeStatus(studentId)
     res.status(200).json({ message: 'Fee payment removed' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -223,7 +174,11 @@ export const getOverdueStudents = async (req, res) => {
   try {
     const students = await Student.find({ tutorId: req.tutor._id, fees: { $gt: 0 } });
     for (const student of students) {
-      await recalculateFeeStatus(student._id);
+      try {
+        await recalculateFeeStatus(student._id);
+      } catch (err) {
+        console.error(`Failed recalculation for student ${student._id}:`, err);
+      }
     }
 
     const minMonths = 1;
@@ -237,6 +192,7 @@ export const getOverdueStudents = async (req, res) => {
 
     res.json(overdueStudents);
   } catch (error) {
+    console.error('Error in getOverdueStudents:', error);
     res.status(500).json({ message: error.message });
   }
 };

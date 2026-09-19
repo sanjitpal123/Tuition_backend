@@ -42,12 +42,12 @@ export const initializeCronJobs = () => {
 
   // Schedule a monthly job at midnight (00:00) on the 1st day of every month (Fee Reset)
   cron.schedule('0 0 1 * *', async () => {
-    console.log('Running monthly fee status reset...');
+    console.log('Running monthly fee status recalculation...');
     try {
-      await Student.updateMany(
-        { status: 'Active' },
-        { $set: { feeStatus: 'Pending' } }
-      );
+      const activeStudents = await Student.find({ status: 'Active' });
+      for (const s of activeStudents) {
+        await recalculateFeeStatus(s._id);
+      }
     } catch (error) {
       console.error('Error running monthly fee status reset cron job:', error);
     }
