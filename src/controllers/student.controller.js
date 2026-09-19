@@ -4,7 +4,7 @@ import Notification from '../models/Notification.model.js';
 import Activity from '../models/Activity.model.js';
 import { sendPushNotification } from '../services/firebase.service.js';
 import bcrypt from 'bcryptjs';
-
+import recalculateFeeStatus from '../utils/recalculateFeeStatus.js';
 export const getStudents = async (req, res) => {
   try {
     const students = await Student.find({ tutorId: req.tutor._id }).populate('batchId', 'name').lean();

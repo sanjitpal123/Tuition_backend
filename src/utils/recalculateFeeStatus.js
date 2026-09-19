@@ -1,5 +1,5 @@
-import Student from '../models/Student.model'
-import FeePayment from '../models/Fee.model'
+import Student from '../models/Student.model.js'
+import FeePayment from '../models/Fee.model.js'
 async function recalculateFeeStatus(studentId) {
     const student = await Student.findById(studentId);
     if (!student) return;
