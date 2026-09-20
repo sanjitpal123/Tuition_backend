@@ -17,26 +17,35 @@ export const getFees = async (req, res) => {
 
 export const recordFeePayment = async (req, res) => {
   try {
-    const { studentId, batchId, amount, month } = req.body;
+    let { studentId, batchId, amount, month, paymentMode, note } = req.body;
+
+    if (batchId && typeof batchId === 'object') {
+      batchId = batchId._id || batchId.id;
+    }
+
+    const student = await Student.findOne({ _id: studentId, tutorId: req.tutor._id });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    if (!batchId && student.batchId) {
+      batchId = typeof student.batchId === 'object' ? (student.batchId._id || student.batchId.id) : student.batchId;
+    }
 
     // Create the fee record
     const fee = await Fee.create({
       tutorId: req.tutor._id,
       studentId,
-      batchId,
-      amount,
-      month
+      batchId: batchId || null,
+      amount: Number(amount),
+      month: month || new Date().toISOString().slice(0, 7),
+      paymentMode: paymentMode || 'cash',
+      note: note || ''
     });
 
-    // Calculate total paid by this student for this month
-    const allFeesThisMonth = await Fee.find({ studentId, month, tutorId: req.tutor._id });
-    const totalPaidThisMonth = allFeesThisMonth.reduce((sum, f) => sum + f.amount, 0);
+    await recalculateFeeStatus(student._id);
 
-    const student = await Student.findOne({ _id: studentId, tutorId: req.tutor._id });
-
-    if (student) {
-      await recalculateFeeStatus(student._id);
-
+    try {
       if (student.fcmTokens && student.fcmTokens.length > 0) {
         await sendPushNotification({
           tokens: student.fcmTokens,
@@ -59,10 +68,13 @@ export const recordFeePayment = async (req, res) => {
         text: `Recorded amount:${amount} payment from ${student.name}`,
         type: 'payment'
       });
+    } catch (notifyErr) {
+      console.error('Non-critical notification error in recordFeePayment:', notifyErr);
     }
 
     res.status(201).json(fee);
   } catch (error) {
+    console.error('Error in recordFeePayment:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -172,7 +184,7 @@ export const deleteFeePaymentById = async (req, res) => {
 
 export const getOverdueStudents = async (req, res) => {
   try {
-    const students = await Student.find({ tutorId: req.tutor._id, fees: { $gt: 0 } }).select('_id');
+    const students = await Student.find({ tutorId: req.tutor._id }).select('_id');
     for (const student of students) {
       try {
         await recalculateFeeStatus(student._id);
@@ -181,11 +193,13 @@ export const getOverdueStudents = async (req, res) => {
       }
     }
 
-    const minMonths = 1;
-    // Instant MongoDB query using indexed field
+    // Match any student with overdueMonths >= 1 OR status === 'Overdue'
     const overdueStudents = await Student.find({
       tutorId: req.tutor._id,
-      'feeStatus.overdueMonths': { $gte: minMonths }
+      $or: [
+        { 'feeStatus.overdueMonths': { $gte: 1 } },
+        { 'feeStatus.status': 'Overdue' }
+      ]
     })
       .populate('batchId', 'name')
       .sort({ 'feeStatus.overdueMonths': -1 }); // Worst defaulters first!

@@ -18,7 +18,19 @@ async function recalculateFeeStatus(studentId) {
       return defaultStatus;
     }
 
-    const rawDate = student.admissionDate || student.createdAt;
+    // Fetch all payments for this student
+    const payments = await FeePayment.find({ studentId: student._id });
+
+    // Determine earliest billing month from payment records if available
+    let earliestPaymentDate = null;
+    if (payments.length > 0) {
+      const sortedMonths = payments.map(p => p.month).filter(Boolean).sort();
+      if (sortedMonths[0]) {
+        earliestPaymentDate = new Date(`${sortedMonths[0]}-01`);
+      }
+    }
+
+    const rawDate = student.admissionDate || earliestPaymentDate || student.createdAt;
     const admDate = (rawDate && !isNaN(new Date(rawDate).getTime())) ? new Date(rawDate) : new Date();
     const joinDay = admDate.getDate() || 1;
     const now = new Date();
@@ -33,19 +45,31 @@ async function recalculateFeeStatus(studentId) {
       cycleEnd = new Date(now.getFullYear(), now.getMonth(), joinDay - 1);
     }
 
-    // Total cycles from admission
+    // Total cycles from admission to current cycle
     const diffMonths = (cycleStart.getFullYear() - admDate.getFullYear()) * 12
       + (cycleStart.getMonth() - admDate.getMonth());
     const totalCycles = Math.max(1, diffMonths + 1);
     const totalExpected = totalCycles * monthlyFee;
 
     // Sum all payments
-    const payments = await FeePayment.find({ studentId: student._id });
     const totalPaid = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
     const balance = totalPaid - totalExpected;
     const paidCycles = Math.floor(totalPaid / monthlyFee);
 
-    const overdueMonths = balance < 0 ? Math.ceil(Math.abs(balance) / monthlyFee) : 0;
+    // Calculate overdue months: how many PAST billing cycles remain unpaid
+    // If balance < 0, total unpaid cycles = Math.abs(balance) / monthlyFee
+    // Past overdue cycles = Math.floor(totalUnpaidCycles)
+    let overdueMonths = 0;
+    if (balance < 0) {
+      const totalUnpaidCycles = Math.abs(balance) / monthlyFee;
+      // If totalUnpaidCycles > 1 (e.g. 1.9 months unpaid), 1 month is past overdue, 1 is current pending
+      if (totalCycles > 1 && totalUnpaidCycles >= 1) {
+        overdueMonths = Math.floor(totalUnpaidCycles);
+      } else if (totalUnpaidCycles >= 1) {
+        overdueMonths = 1;
+      }
+    }
+
     // Status
     let status = 'Paid', pendingAmount = 0;
     if (balance < 0) {
@@ -84,7 +108,7 @@ async function recalculateFeeStatus(studentId) {
       lastUpdated: new Date()
     };
 
-    // Use direct MongoDB updateOne to cleanly replace feeStatus in DB without triggering in-memory Mongoose string setter errors
+    // Atomic update in MongoDB
     await Student.updateOne({ _id: studentId }, { $set: { feeStatus: updatedFeeStatus } });
 
     return updatedFeeStatus;
