@@ -61,23 +61,37 @@ export const getStudentDashboard = async (req, res) => {
     
     // If a specific tuition is requested, find the corresponding student record
     if (req.query.tuitionId) {
-      const conditions = [];
-      if (req.student.email && req.student.email.trim() !== '') conditions.push({ email: req.student.email });
-      if (req.student.phone && req.student.phone.trim() !== '') conditions.push({ phone: req.student.phone });
+      // 1. Direct student lookup if tuitionId is a Student ID
+      let specificStudent = await Student.findById(req.query.tuitionId);
       
-      if (conditions.length > 0) {
-        const specificStudent = await Student.findOne({
-          tutorId: req.query.tuitionId,
-          $or: conditions
-        });
-        if (specificStudent) {
-          studentId = specificStudent._id;
+      // 2. Otherwise match by tutorId and student credentials/name
+      if (!specificStudent) {
+        const queryOr = [];
+        if (req.student.email && String(req.student.email).trim() !== '') queryOr.push({ email: req.student.email });
+        if (req.student.phone && String(req.student.phone).trim() !== '') queryOr.push({ phone: req.student.phone });
+        if (req.student.name && String(req.student.name).trim() !== '') queryOr.push({ name: req.student.name });
+
+        if (queryOr.length > 0) {
+          specificStudent = await Student.findOne({
+            tutorId: req.query.tuitionId,
+            $or: queryOr
+          });
         }
+      }
+
+      if (specificStudent) {
+        studentId = specificStudent._id;
       }
     }
     
-    const student = await Student.findById(studentId).populate('batchId', 'name class subject schedule time fee').populate('tutorId', 'tuitionName name');
-    if (!student) return res.status(404).json({ message: 'Student not found' });
+    let student = await Student.findById(studentId).populate('batchId', 'name class subject schedule time fee').populate('tutorId', 'tuitionName name');
+    
+    // Fallback: If specific student is not found, safely fallback to primary logged-in student
+    if (!student) {
+      student = await Student.findById(req.student._id).populate('batchId', 'name class subject schedule time fee').populate('tutorId', 'tuitionName name');
+    }
+
+    if (!student) return res.status(404).json({ message: 'Student profile not found' });
     
     // Fetch unique tuitions for this student
     const matchConditions = [];
@@ -86,6 +100,9 @@ export const getStudentDashboard = async (req, res) => {
     }
     if (req.student.phone && String(req.student.phone).trim() !== '') {
       matchConditions.push({ phone: req.student.phone });
+    }
+    if (matchConditions.length === 0) {
+      matchConditions.push({ _id: req.student._id });
     }
 
     let tuitions = [];
@@ -190,6 +207,8 @@ export const getStudentDashboard = async (req, res) => {
         batchId: student.batchId._id || student.batchId
       }).sort({ date: -1, createdAt: -1 }).limit(10);
     }
+
+    const studentFeeValue = Number(student.fees || student.monthlyFee || (student.batchId ? (student.batchId.fee || student.batchId.fees) : 0)) || 0;
 
     res.json({
       student: {
