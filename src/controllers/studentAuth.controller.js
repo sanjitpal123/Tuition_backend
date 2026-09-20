@@ -22,11 +22,20 @@ export const loginStudent = async (req, res) => {
     if (matchedStudents.length > 0) {
       const primaryStudent = matchedStudents[0];
       
-      const tuitions = matchedStudents.map(s => ({
-        id: s.tutorId._id,
-        name: s.tutorId.tuitionName || s.tutorId.name,
-        studentId: s._id
-      }));
+      const uniqueTuitionsMap = new Map();
+      matchedStudents.forEach(s => {
+        if (s.tutorId && s.tutorId._id) {
+          const tid = s.tutorId._id.toString();
+          if (!uniqueTuitionsMap.has(tid)) {
+            uniqueTuitionsMap.set(tid, {
+              id: s.tutorId._id,
+              name: s.tutorId.tuitionName || s.tutorId.name || 'Tuition',
+              studentId: s._id
+            });
+          }
+        }
+      });
+      const tuitions = Array.from(uniqueTuitionsMap.values());
 
       res.json({
         _id: primaryStudent.id,
@@ -52,28 +61,59 @@ export const getStudentDashboard = async (req, res) => {
     
     // If a specific tuition is requested, find the corresponding student record
     if (req.query.tuitionId) {
-      const specificStudent = await Student.findOne({
-        tutorId: req.query.tuitionId,
-        $or: [{ email: req.student.email }, { phone: req.student.phone }]
-      });
-      if (specificStudent) {
-        studentId = specificStudent._id;
+      const conditions = [];
+      if (req.student.email && req.student.email.trim() !== '') conditions.push({ email: req.student.email });
+      if (req.student.phone && req.student.phone.trim() !== '') conditions.push({ phone: req.student.phone });
+      
+      if (conditions.length > 0) {
+        const specificStudent = await Student.findOne({
+          tutorId: req.query.tuitionId,
+          $or: conditions
+        });
+        if (specificStudent) {
+          studentId = specificStudent._id;
+        }
       }
     }
     
-    const student = await Student.findById(studentId).populate('batchId', 'name class subject schedule time fee');
+    const student = await Student.findById(studentId).populate('batchId', 'name class subject schedule time fee').populate('tutorId', 'tuitionName name');
     if (!student) return res.status(404).json({ message: 'Student not found' });
     
-    // Fetch all tuitions for the user so the dashboard always has the list
-    const allStudents = await Student.find({
-      $or: [{ email: req.student.email }, { phone: req.student.phone }]
-    }).populate('tutorId', 'tuitionName name');
-    
-    const tuitions = allStudents.map(s => ({
-      id: s.tutorId._id,
-      name: s.tutorId.tuitionName || s.tutorId.name,
-      studentId: s._id
-    }));
+    // Fetch unique tuitions for this student
+    const matchConditions = [];
+    if (req.student.email && String(req.student.email).trim() !== '') {
+      matchConditions.push({ email: req.student.email });
+    }
+    if (req.student.phone && String(req.student.phone).trim() !== '') {
+      matchConditions.push({ phone: req.student.phone });
+    }
+
+    let tuitions = [];
+    if (matchConditions.length > 0) {
+      const allStudents = await Student.find({ $or: matchConditions }).populate('tutorId', 'tuitionName name');
+      const uniqueTuitionsMap = new Map();
+      allStudents.forEach(s => {
+        if (s.tutorId && s.tutorId._id) {
+          const tid = s.tutorId._id.toString();
+          if (!uniqueTuitionsMap.has(tid)) {
+            uniqueTuitionsMap.set(tid, {
+              id: s.tutorId._id,
+              name: s.tutorId.tuitionName || s.tutorId.name || 'Tuition',
+              studentId: s._id
+            });
+          }
+        }
+      });
+      tuitions = Array.from(uniqueTuitionsMap.values());
+    }
+
+    if (tuitions.length === 0 && student.tutorId) {
+      tuitions = [{
+        id: student.tutorId._id || student.tutorId,
+        name: student.tutorId.tuitionName || student.tutorId.name || 'Tuition',
+        studentId: student._id
+      }];
+    }
     
     // Fetch Announcements
     const announcements = await Announcement.find({
