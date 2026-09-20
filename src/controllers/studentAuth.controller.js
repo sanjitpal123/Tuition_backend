@@ -183,7 +183,13 @@ export const getStudentDashboard = async (req, res) => {
       }
     }
 
-    const studentFeeValue = Number(student.fees || student.monthlyFee || (student.batchId ? (student.batchId.fee || student.batchId.fees) : 0)) || 0;
+    let classesList = [];
+    if (student.batchId) {
+      const ClassModel = (await import('../models/Class.model.js')).default;
+      classesList = await ClassModel.find({
+        batchId: student.batchId._id || student.batchId
+      }).sort({ date: -1, createdAt: -1 }).limit(10);
+    }
 
     res.json({
       student: {
@@ -201,6 +207,7 @@ export const getStudentDashboard = async (req, res) => {
       tuitions,
       announcements,
       homeworks,
+      classes: classesList,
       fees: {
         history: feeRecords
       },
