@@ -140,12 +140,61 @@ export const getStudentDashboard = async (req, res) => {
     const Fee = (await import('../models/Fee.model.js')).default;
     const feeRecords = await Fee.find({ studentId: student._id }).sort({ paymentDate: -1, month: -1 });
 
+    // Fetch Today's Class for this student's batch
+    let todaysClassReal = null;
+    if (student.batchId) {
+      const ClassModel = (await import('../models/Class.model.js')).default;
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+
+      const explicitClass = await ClassModel.findOne({
+        batchId: student.batchId._id || student.batchId,
+        date: { $gte: startOfToday, $lte: endOfToday }
+      });
+
+      if (explicitClass) {
+        todaysClassReal = {
+          subject: explicitClass.subject || student.batchId.subject || student.batchId.name || 'Batch Class',
+          time: explicitClass.time || student.batchId.time || 'As Scheduled',
+          topic: explicitClass.subject ? `${explicitClass.subject} Session` : 'Scheduled Class',
+          room: 'Main Classroom',
+          status: explicitClass.status || 'Upcoming'
+        };
+      } else if (student.batchId.schedule && Array.isArray(student.batchId.schedule) && student.batchId.schedule.length > 0) {
+        const daysMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const todayDayStr = daysMap[new Date().getDay()];
+        if (student.batchId.schedule.includes(todayDayStr)) {
+          todaysClassReal = {
+            subject: student.batchId.subject || student.batchId.name || 'Batch Class',
+            time: student.batchId.time || 'As Scheduled',
+            topic: `${todayDayStr} Schedule Class`,
+            room: 'Main Classroom'
+          };
+        }
+      } else if (student.batchId.subject || student.batchId.name) {
+        todaysClassReal = {
+          subject: student.batchId.subject || student.batchId.name || 'Batch Class',
+          time: student.batchId.time || 'As Scheduled',
+          topic: 'Regular Session',
+          room: 'Main Classroom'
+        };
+      }
+    }
+
+    const studentFeeValue = Number(student.fees || student.monthlyFee || (student.batchId ? (student.batchId.fee || student.batchId.fees) : 0)) || 0;
+
     res.json({
       student: {
         _id: student._id,
         name: student.name,
         email: student.email,
         phone: student.phone,
+        admissionDate: student.admissionDate,
+        createdAt: student.createdAt,
+        fees: studentFeeValue,
+        monthlyFee: studentFeeValue,
         feeStatus: student.feeStatus,
         batch: student.batchId
       },
@@ -160,12 +209,7 @@ export const getStudentDashboard = async (req, res) => {
         totalClasses: attendanceRecords.length,
         records: attendanceRecords.sort((a, b) => new Date(b.date) - new Date(a.date))
       },
-      todaysClass: student.batchId ? {
-        subject: student.batchId.subject,
-        time: student.batchId.time,
-        topic: 'Regular Class', // Mock for now
-        room: 'Online/Classroom'
-      } : null
+      todaysClass: todaysClassReal
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
