@@ -1,9 +1,11 @@
+import mongoose from 'mongoose';
 import Fee from '../models/Fee.model.js';
 import Student from '../models/Student.model.js';
 import Notification from '../models/Notification.model.js';
 import Activity from '../models/Activity.model.js';
 import { sendPushNotification } from '../services/firebase.service.js';
 import recalculateFeeStatus from '../utils/recalculateFeeStatus.js';
+
 export const getFees = async (req, res) => {
   try {
     const fees = await Fee.find({ tutorId: req.tutor._id })
@@ -19,24 +21,38 @@ export const recordFeePayment = async (req, res) => {
   try {
     let { studentId, batchId, amount, month, paymentMode, note } = req.body;
 
+    if (studentId && typeof studentId === 'object') {
+      studentId = studentId._id || studentId.id;
+    }
+
+    if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ message: 'Invalid Student ID' });
+    }
+
     if (batchId && typeof batchId === 'object') {
       batchId = batchId._id || batchId.id;
     }
 
     const student = await Student.findOne({ _id: studentId, tutorId: req.tutor._id });
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(404).json({ message: 'Student record not found' });
     }
 
-    if (!batchId && student.batchId) {
-      batchId = typeof student.batchId === 'object' ? (student.batchId._id || student.batchId.id) : student.batchId;
+    let validBatchId = null;
+    if (batchId && mongoose.Types.ObjectId.isValid(batchId)) {
+      validBatchId = batchId;
+    } else if (student.batchId) {
+      const bId = typeof student.batchId === 'object' ? (student.batchId._id || student.batchId.id) : student.batchId;
+      if (bId && mongoose.Types.ObjectId.isValid(bId)) {
+        validBatchId = bId;
+      }
     }
 
     // Create the fee record
     const fee = await Fee.create({
       tutorId: req.tutor._id,
-      studentId,
-      batchId: batchId || null,
+      studentId: student._id,
+      batchId: validBatchId,
       amount: Number(amount),
       month: month || new Date().toISOString().slice(0, 7),
       paymentMode: paymentMode || 'cash',
@@ -65,7 +81,7 @@ export const recordFeePayment = async (req, res) => {
 
       await Activity.create({
         tutorId: req.tutor._id,
-        text: `Recorded amount:${amount} payment from ${student.name}`,
+        text: `Recorded amount: ₹${amount} payment from ${student.name}`,
         type: 'payment'
       });
     } catch (notifyErr) {
@@ -75,7 +91,7 @@ export const recordFeePayment = async (req, res) => {
     res.status(201).json(fee);
   } catch (error) {
     console.error('Error in recordFeePayment:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message || 'Failed to record fee payment' });
   }
 };
 
