@@ -1,18 +1,52 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 import connectDB from './config/db.js';
-import dotenv from 'dotenv';
-dotenv.config()
+
 connectDB();
 
 const app = express();
 
-// Middleware
+// 1. Tell Express it is behind Render's reverse proxy
+app.set('trust proxy', 1);
+
+// 2. HTTP Security Headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// 3. CORS
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// 4. Rate Limiters
+// General API Limiter (Generous: 600 reqs / 15 min for normal dashboard browsing)
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 600,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { message: 'Too many requests. Please slow down.' }
+});
+app.use('/api', generalLimiter);
+
+// Strict Auth Limiter (Strict: 25 attempts / 15 min to stop password brute-force)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 25,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { message: 'Too many login attempts. Please try again after 15 minutes.' }
+});
+
+// Import services and routes
+import { initializeFirebase } from './services/firebase.service.js';
+import { initializeCronJobs } from './services/cron.service.js';
+initializeFirebase();
+initializeCronJobs();
+
 import authRoutes from './routes/auth.routes.js';
 import studentAuthRoutes from './routes/studentAuth.routes.js';
 import studentRoutes from './routes/student.routes.js';
@@ -23,22 +57,14 @@ import activityRoutes from './routes/activity.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import feeRoutes from './routes/fee.routes.js';
 import attendanceRoutes from './routes/attendance.routes.js';
-import { initializeFirebase } from './services/firebase.service.js';
-import { initializeCronJobs } from './services/cron.service.js';
-
-initializeFirebase();
-initializeCronJobs();
-
 import homeworkRoutes from './routes/homework.routes.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Apply strict limiter ONLY to sensitive auth endpoints
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/student-auth/login', authLimiter);
 
-// Serve static files from uploads folder (in the parent directory of src)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/student-auth', studentAuthRoutes);
 app.use('/api/students', studentRoutes);
@@ -51,7 +77,6 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/homework', homeworkRoutes);
 
-// Basic Route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Setupclass Backend API' });
 });

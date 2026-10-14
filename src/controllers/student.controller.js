@@ -34,8 +34,16 @@ export const createStudent = async (req, res) => {
     let { name, email, phone, parentName, parentPhone, dob, admissionDate, batchId, status, password, fees } = req.body;
 
     // Use DOB as default password if no password is provided
-    if (!password && dob) {
-      password = typeof dob === 'string' ? dob : new Date(dob).toISOString().split('T')[0];
+    if (dob) {
+      const d = new Date(dob);
+      if (!isNaN(d.getTime())) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        password = `${yyyy}-${mm}-${dd}`; // Primary standard format
+      } else if (typeof dob === 'string') {
+        password = dob.trim();
+      }
     }
 
     const student = await Student.create({

@@ -16,8 +16,25 @@ export const loginStudent = async (req, res) => {
       $or: [{ email: email }, { phone: email }] 
     }).populate('tutorId', 'tuitionName name');
     
-    // Check if any matching student has the correct password
-    const matchedStudents = students.filter(s => s.password === password);
+    // Check if any matching student has the correct password (supports exact match or flexible DOB formats)
+    const matchedStudents = students.filter(s => {
+      if (s.password === password) return true;
+      if (s.dob) {
+        const d = new Date(s.dob);
+        if (!isNaN(d.getTime())) {
+          const yyyy = String(d.getFullYear());
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const cleanInput = String(password).replace(/[-/]/g, '').trim();
+          // Match YYYY-MM-DD, DD-MM-YYYY, DDMMYYYY, or YYYYMMDD
+          if (`${yyyy}-${mm}-${dd}` === password) return true;
+          if (`${dd}-${mm}-${yyyy}` === password) return true;
+          if (`${dd}${mm}${yyyy}` === cleanInput) return true;
+          if (`${yyyy}${mm}${dd}` === cleanInput) return true;
+        }
+      }
+      return false;
+    });
     
     if (matchedStudents.length > 0) {
       const primaryStudent = matchedStudents[0];
